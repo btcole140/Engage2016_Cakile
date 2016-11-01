@@ -147,7 +147,8 @@ EngC$rankWCFrt <- rank(EngC$WCFrt)
 SumEngCH<- summarySE(EngC, measurevar="SizeH", groupvars=c("Rep", "Trtmt")) 
 GGEngCH <- ggplot(data=SumEngCH, aes(x=Trtmt, y=SizeH, group=Rep, shape=Rep)) +
   geom_errorbar(aes(ymin=SizeH-se, ymax=SizeH+se), width=0.1) + #set error bars
-  geom_line() + geom_point(size=3)+ #can change size of data points
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
   xlab("Treatment (%)") + ylab("Stem Height at Harvest (cm)") +
   scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Stem Height\nbetween Treatments") + #name=sets the legend titel
   theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
@@ -190,6 +191,146 @@ ORlmeEngCHTSR <- ifelse(abs(RlmeEngCHTSR)>SDRlmeEngCHTSR, 1, 0)
 plot(RlmeEngCHTSR, col=ORlmeEngCHTSR+1, pch=16, ylim=c(-30,30))
 EngCH <- EngC[!ORlmeEngCHTSR,]
 nrow(EngCH) #251 from 258
+
+SumEngCHx<- summarySE(EngCH, measurevar="SizeH", groupvars=c("Rep", "Trtmt")) 
+GGEngCHx <- ggplot(data=SumEngCHx, aes(x=Trtmt, y=SizeH, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=SizeH-se, ymax=SizeH+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+ #can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8)) +
+  xlab("Treatment (%)") + ylab("Stem Height at Harvest (cm)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Stem Height\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCHTSR2 <- lmer(SizeH~Trtmt+(1|SSID)+(1|Rep), data=EngCH)
+summary(lmeEngCHTSR2)
+lmeEngCHTS2 <- lmer(SizeH~Trtmt+(1|SSID), data=EngCH)
+anova(lmeEngCHTS2, lmeEngCHTSR2) #the removal of Rep was significant (p=0.00036 Chisq=12.73)
+lmeEngCHTR2 <- lmer(SizeH~Trtmt+(1|Rep), data=EngCH)
+anova(lmeEngCHTR2, lmeEngCHTSR2) #the removal of SSID was significant (p=0.0086 Chisq=6.899)
+lmEngCHT2 <- lm(SizeH~Trtmt, data=EngCH)
+x <- -2*logLik(lmEngCHT2, REML=T) +2*logLik(lmeEngCHTSR2, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=29.14, p=<0.0001, random effects of SSID and Rep are sig
+AIC(lmEngCHT2) #=1555.66
+AIC(lmeEngCHTSR2) #=1522.84
+#Therefore SSID and Rep need to be included in the model as random effects
+lmeEngCHSR2 <- update(lmeEngCHTSR2,~.-Trtmt)
+anova(lmeEngCHSR2, lmeEngCHTSR2) #the effect of trtmt is significant after considering
+#the variation explained by SSID and Rep (p=0.0015 chisq=15.38)
+
+#check assumptions of best model
+RlmeEngCHTSR2 <- resid(lmeEngCHTSR2) 
+FlmeEngCHTSR2 <- fitted(lmeEngCHTSR2)
+plot(FlmeEngCHTSR2, RlmeEngCHTSR2) #okay skatter
+abline(h=0, col=c("red"))
+hist(RlmeEngCHTSR2) #not bad, not many columns and a slight skew right
+qqnorm(RlmeEngCHTSR2, main="Q-Q plot for residuals") 
+qqline(RlmeEngCHTSR2) # still tail at bottom end
+
+#*********************
+#BranchesH
+SumEngCBH<- summarySE(EngC, measurevar="rankBranchesH", groupvars=c("Rep", "Trtmt")) 
+GGEngCBH <- ggplot(data=SumEngCBH, aes(x=Trtmt, y=rankBranchesH, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=rankBranchesH-se, ymax=rankBranchesH+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Ranked No. of Branches at Harvest (cm)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile No.Branches\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCBHTSR <- lmer(rankBranchesH~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCBHTSR)
+lmeEngCBHTS <- lmer(rankBranchesH~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCBHTS, lmeEngCBHTSR) #the removal of Rep was significant (p=0.001 Chisq=10.82)
+lmeEngCBHTR <- lmer(rankBranchesH~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCBHTR, lmeEngCBHTSR) #the removal of SSID was not significant (p=0.486 Chisq=0.486)
+lmEngCBHT <- lm(rankBranchesH~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCBHT, REML=T) +2*logLik(lmeEngCBHTR, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=16.35, p=0.00096, random effect of Rep was sig
+AIC(lmEngCBHT) #=2957.64
+AIC(lmeEngCBHTR) #=2918.23
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCBHR <- update(lmeEngCBHTR,~.-Trtmt)
+anova(lmeEngCBHR, lmeEngCBHTR) #the effect of trtmt is not significant after considering
+#the variation explained by SSID and Rep (p=0.112 chisq=5.998)
+
+#check assumptions of best model
+RlmeEngCBHTR <- resid(lmeEngCBHTR) 
+FlmeEngCBHTR <- fitted(lmeEngCBHTR)
+plot(FlmeEngCBHTR, RlmeEngCBHTR) #okay skatter, but shows trend from left to right
+abline(h=0, col=c("red"))
+hist(RlmeEngCBHTR) #okay.. few columns and the middle columns are all the same height
+qqnorm(RlmeEngCBHTR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCBHTR) #tails at either end
+
+#outliers
+RlmeEngCBHTR <- resid(lmeEngCBHTR)
+SDRlmeEngCBHTR <- 3*sd(RlmeEngCBHTR)
+ORlmeEngCBHTR <- ifelse(abs(RlmeEngCBHTR)>SDRlmeEngCBHTR, 1, 0)
+plot(RlmeEngCBHTR, col=ORlmeEngCBHTR+1, pch=16, ylim=c(-200,200))
+EngCBH <- EngC[!ORlmeEngCBHTR,]
+nrow(EngCBH) #258 from 258... no outliers
+
+#*********************
+#LTFrt
+SumEngCFr<- summarySE(EngC, measurevar="sqrtLTFrt", groupvars=c("Rep", "Trtmt")) 
+GGEngCFr <- ggplot(data=SumEngCFr, aes(x=Trtmt, y=sqrtLTFrt, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtLTFrt-se, ymax=sqrtLTFrt+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(sqrt(Lifetime~Fruit)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Lifetime Fruit\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCBHTSR <- lmer(rankBranchesH~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCBHTSR)
+lmeEngCBHTS <- lmer(rankBranchesH~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCBHTS, lmeEngCBHTSR) #the removal of Rep was significant (p=0.001 Chisq=10.82)
+lmeEngCBHTR <- lmer(rankBranchesH~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCBHTR, lmeEngCBHTSR) #the removal of SSID was not significant (p=0.486 Chisq=0.486)
+lmEngCBHT <- lm(rankBranchesH~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCBHT, REML=T) +2*logLik(lmeEngCBHTR, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=16.35, p=0.00096, random effect of Rep was sig
+AIC(lmEngCBHT) #=2957.64
+AIC(lmeEngCBHTR) #=2918.23
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCBHR <- update(lmeEngCBHTR,~.-Trtmt)
+anova(lmeEngCBHR, lmeEngCBHTR) #the effect of trtmt is not significant after considering
+#the variation explained by SSID and Rep (p=0.112 chisq=5.998)
+
+#check assumptions of best model
+RlmeEngCBHTR <- resid(lmeEngCBHTR) 
+FlmeEngCBHTR <- fitted(lmeEngCBHTR)
+plot(FlmeEngCBHTR, RlmeEngCBHTR) #okay skatter, but shows trend from left to right
+abline(h=0, col=c("red"))
+hist(RlmeEngCBHTR) #okay.. few columns and the middle columns are all the same height
+qqnorm(RlmeEngCBHTR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCBHTR) #tails at either end
+
+#outliers
+RlmeEngCBHTR <- resid(lmeEngCBHTR)
+SDRlmeEngCBHTR <- 3*sd(RlmeEngCBHTR)
+ORlmeEngCBHTR <- ifelse(abs(RlmeEngCBHTR)>SDRlmeEngCBHTR, 1, 0)
+plot(RlmeEngCBHTR, col=ORlmeEngCBHTR+1, pch=16, ylim=c(-200,200))
+EngCBH <- EngC[!ORlmeEngCBHTR,]
+nrow(EngCBH) #258 from 258... no outliers
 
 #**************************Only Reps 2, 3, 4 ****************************
 #Distribution
