@@ -812,6 +812,13 @@ EngC234$sqrtSizeFlw <- sqrt(EngC234$SizeFlw+0.5)
 hist(EngC234$sqrtSizeFlw) #not much better than raw, more centred
 EngC234$rankSizeFlw <- rank(EngC234$SizeFlw)
 
+hist(EngC234SFlwx$SizeFlw) #okay shape, few columns
+EngC234SFlwx$LogSizeFlw <- log10(EngC234SFlwx$SizeFlw+1)
+hist(EngC234SFlwx$LogSizeFlw) #better than raw *
+EngC234SFlwx$sqrtSizeFlw <- sqrt(EngC234SFlwx$SizeFlw+0.5)
+hist(EngC234SFlwx$sqrtSizeFlw) #not much better than raw, more centred
+EngC234SFlwx$rankSizeFlw <- rank(EngC234SFlwx$SizeFlw)
+
 #DFlw
 par(mfrow = c(1,1))
 hist(EngC234$DFlw) #not great shape, few columns
@@ -820,6 +827,13 @@ hist(EngC234$LogDFlw) #bit better than raw
 EngC234$sqrtDFlw <- sqrt(EngC234$DFlw+0.5)
 hist(EngC234$sqrtDFlw) #more columns and okay shape *
 EngC234$rankDFlw <- rank(EngC234$DFlw)
+
+hist(EngC234DFlwx$DFlw) #okay shape, few columns
+EngC234DFlwx$LogDFlw <- log10(EngC234DFlwx$DFlw+1)
+hist(EngC234DFlwx$LogDFlw) #bit better than raw
+EngC234DFlwx$sqrtDFlw <- sqrt(EngC234DFlwx$DFlw+0.5)
+hist(EngC234DFlwx$sqrtDFlw) #more columns and okay shape *
+EngC234DFlwx$rankDFlw <- rank(EngC234DFlwx$DFlw)
 
 #FlwDuration
 par(mfrow = c(1,1))
@@ -830,17 +844,24 @@ EngC234$sqrtFlwDuration <- sqrt(EngC234$FlwDuration+0.5)
 hist(EngC234$sqrtFlwDuration) #more columns but not much shape
 EngC234$rankFlwDuration <- rank(EngC234$FlwDuration) #*
 
+hist(EngC234FlwDx$FlwDuration) #not great shape, few columns
+EngC234FlwDx$LogFlwDuration <- log10(EngC234FlwDx$FlwDuration+1)
+hist(EngC234FlwDx$LogFlwDuration) #not better than raw
+EngC234FlwDx$sqrtFlwDuration <- sqrt(EngC234FlwDx$FlwDuration+0.5)
+hist(EngC234FlwDx$sqrtFlwDuration) #more columns but not much shape
+EngC234FlwDx$rankFlwDuration <- rank(EngC234FlwDx$FlwDuration) #*
+
 write.table(EngC234, file = "Engage2016_CakileRep234_set.csv", sep = ",", col.names = TRUE, row.names = FALSE)
 
 #*************************************
 #Analysis of variation between trtmts while considering rep and tray
 #*******************************
 #SizeFlw
-EngC234x <- EngC234$SizeFlw[!(is.na(EngC234$SizeFlw))]
+EngC234SFlwx <- EngC234[!rowSums(is.na(EngC234["SizeFlw"])),]
                           
-SumEngC234HFlw<- summarySE(EngC234, measurevar="logSizeFlw", groupvars=c("Rep", "Trtmt")) 
-GGEngC234HFlw <- ggplot(data=SumEngC234HFlw, aes(x=Trtmt, y=logSizeFlw, group=Rep, shape=Rep)) +
-  geom_errorbar(aes(ymin=logSizeFlw-se, ymax=logSizeFlw+se), width=0.1) + #set error bars
+SumEngC234HFlw<- summarySE(EngC234SFlwx, measurevar="LogSizeFlw", groupvars=c("Rep", "Trtmt")) 
+GGEngC234HFlw <- ggplot(data=SumEngC234HFlw, aes(x=Trtmt, y=LogSizeFlw, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=LogSizeFlw-se, ymax=LogSizeFlw+se), width=0.1) + #set error bars
   geom_line() + geom_point(size=3)+#can change size of data points
   scale_shape_manual(values=c(15, 16, 17, 8))+
   xlab("Treatment (%)") + ylab(expression(bold(Log[10]~Height~at~Flowering~(cm)))) +
@@ -851,37 +872,225 @@ GGEngC234HFlw <- ggplot(data=SumEngC234HFlw, aes(x=Trtmt, y=logSizeFlw, group=Re
   theme(axis.title.y = element_text(face="bold", size=20),
         axis.text.y  = element_text(size=16))
 
-lmeEngC234HFlwTSR <- lmer(logSizeFlw~Trtmt+(1|SSID)+(1|Rep), data=EngC234)
+lmeEngC234HFlwTSR <- lmer(LogSizeFlw~Trtmt+(1|SSID)+(1|Rep), data=EngC234SFlwx)
 summary(lmeEngC234HFlwTSR)
-lmeEngC234HFlwTS <- lmer(logSizeFlw~Trtmt+(1|SSID), data=EngC234)
-anova(lmeEngC234HFlwTS, lmeEngC234HFlwTSR) #the removal of Rep was non significant (p=0.3125 Chisq=1.02)
-lmeEngC234HFlwTR <- lmer(logSizeFlw~Trtmt+(1|Rep), data=EngC234)
-anova(lmeEngC234HFlwTR, lmeEngC234HFlwTSR) #the removal of SSID was significant (p=<0.0001 Chisq=19.554)
-lmEngC234HFlwT <- lm(logSizeFlw~Trtmt, data=EngC234)
-x <- -2*logLik(lmEngC234HFlwT, REML=T) +2*logLik(lmeEngC234HFlwTS, REML=T)
+lmeEngC234HFlwTS <- lmer(LogSizeFlw~Trtmt+(1|SSID), data=EngC234SFlwx)
+anova(lmeEngC234HFlwTS, lmeEngC234HFlwTSR) #the removal of Rep was significant (p=<0.0001 Chisq=16.79)
+lmeEngC234HFlwTR <- lmer(LogSizeFlw~Trtmt+(1|Rep), data=EngC234SFlwx)
+anova(lmeEngC234HFlwTR, lmeEngC234HFlwTSR) #the removal of SSID was non significant (p=<0.1641 Chisq=1.94)
+lmEngC234HFlwT <- lm(LogSizeFlw~Trtmt, data=EngC234SFlwx)
+x <- -2*logLik(lmEngC234HFlwT, REML=T) +2*logLik(lmeEngC234HFlwTR, REML=T)
 x
 pchisq(x, df=3, lower.tail=F)
-#logLik=23.45, p=<0.0001, random effect of SSID was sig
-AIC(lmEngC234HFlwT) #=1293.38
-AIC(lmeEngC234HFlwTS) #=1268.58
-#Therefore SSID needs to be included in the model as random effect
-lmeEngC234HFlwS <- update(lmeEngC234HFlwTS,~.-Trtmt)
-anova(lmeEngC234HFlwS, lmeEngC234HFlwTS) #the effect of trtmt is non significant after considering
-#the variation explained by SSID and Rep (p=0.21 chisq=4.51)
+#logLik=14.66, p=0.0021, random effect of Rep was sig
+AIC(lmEngC234HFlwT) #=-366.76
+AIC(lmeEngC234HFlwTR) #=-369.32
+#Therefore Rep needs to be included in the model as random effect
+lmeEngC234HFlwR <- update(lmeEngC234HFlwTR,~.-Trtmt)
+anova(lmeEngC234HFlwR, lmeEngC234HFlwTR) #the effect of trtmt is significant after considering
+#the variation explained by SSID and Rep (p=0.0056 chisq=12.59)
 
 #check assumptions of best model
-RlmeEngC234HFlwTS <- resid(lmeEngC234HFlwTS) 
-FlmeEngC234HFlwTS <- fitted(lmeEngC234HFlwTS)
-plot(FlmeEngC234HFlwTS, RlmeEngC234HFlwTS) #okay scatter, slight skew right
+RlmeEngC234HFlwTR <- resid(lmeEngC234HFlwTR) 
+FlmeEngC234HFlwTR <- fitted(lmeEngC234HFlwTR)
+plot(FlmeEngC234HFlwTR, RlmeEngC234HFlwTR) #okay scatter
 abline(h=0, col=c("red"))
-hist(RlmeEngC234HFlwTS) #good
-qqnorm(RlmeEngC234HFlwTS, main="Q-Q plot for residuals") 
-qqline(RlmeEngC234HFlwTS) #slight tail at either end, but good
+hist(RlmeEngC234HFlwTR) #good
+qqnorm(RlmeEngC234HFlwTR, main="Q-Q plot for residuals") 
+qqline(RlmeEngC234HFlwTR) #slight tail at either end, but good
 
 #outliers
-RlmeEngC234HFlwTS <- resid(lmeEngC234HFlwTS)
-SDRlmeEngC234HFlwTS <- 3*sd(RlmeEngCW234HFlwTS)
-ORlmeEngC234HFlwTS <- ifelse(abs(RlmeEngC234HFlwTS)>SDRlmeEngC234HFlwTS, 1, 0)
-plot(RlmeEngC234HFlwTS, col=ORlmeEngC234HFlwTS+1, pch=16, ylim=c(-10,10))
-EngC234HFlw <- EngC[!ORlmeEngC234HFlwTS,]
-nrow(EngC234HFlw) #255 from 258
+RlmeEngC234HFlwTR <- resid(lmeEngC234HFlwTR)
+SDRlmeEngC234HFlwTR <- 3*sd(RlmeEngC234HFlwTR)
+ORlmeEngC234HFlwTR <- ifelse(abs(RlmeEngC234HFlwTR)>SDRlmeEngC234HFlwTR, 1, 0)
+plot(RlmeEngC234HFlwTR, col=ORlmeEngC234HFlwTR+1, pch=16, ylim=c(-1,1))
+EngC234HFlw <- EngC234SFlwx[!ORlmeEngC234HFlwTR,]
+nrow(EngC234HFlw) #187 from 188... one less outlier will unlikely change the results
+
+#*******************************
+#DFlw
+EngC234DFlwx <- EngC234[!rowSums(is.na(EngC234["DFlw"])),]
+
+SumEngC234DFlw<- summarySE(EngC234DFlwx, measurevar="sqrtDFlw", groupvars=c("Rep", "Trtmt")) 
+GGEngC234DFlw <- ggplot(data=SumEngC234DFlw, aes(x=Trtmt, y=sqrtDFlw, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtDFlw-se, ymax=sqrtDFlw+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(Log[10]~Height~at~Flowering~(cm)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Height at Flowering\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngC234DFlwTSR <- lmer(sqrtDFlw~Trtmt+(1|SSID)+(1|Rep), data=EngC234DFlwx)
+summary(lmeEngC234DFlwTSR)
+lmeEngC234DFlwTS <- lmer(sqrtDFlw~Trtmt+(1|SSID), data=EngC234DFlwx)
+anova(lmeEngC234DFlwTS, lmeEngC234DFlwTSR) #the removal of Rep was non significant (p=0.725 Chisq=0.124)
+lmeEngC234DFlwTR <- lmer(sqrtDFlw~Trtmt+(1|Rep), data=EngC234DFlwx)
+anova(lmeEngC234DFlwTR, lmeEngC234DFlwTSR) #the removal of SSID was significant (p=<0.0001 Chisq=21.198)
+lmEngC234DFlwT <- lm(sqrtDFlw~Trtmt, data=EngC234DFlwx)
+x <- -2*logLik(lmEngC234DFlwT, REML=T) +2*logLik(lmeEngC234DFlwTS, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=23.87, p=<0.0001, random effect of SSID was sig
+AIC(lmEngC234DFlwT) #=240.94
+AIC(lmeEngC234DFlwTS) #=-233.52
+#Therefore SSID needs to be included in the model as random effect
+lmeEngC234DFlwS <- update(lmeEngC234DFlwTS,~.-Trtmt)
+anova(lmeEngC234DFlwS, lmeEngC234DFlwTS) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.305 chisq=3.63)
+
+#check assumptions of best model
+RlmeEngC234DFlwTS <- resid(lmeEngC234DFlwTS) 
+FlmeEngC234DFlwTS <- fitted(lmeEngC234DFlwTS)
+plot(FlmeEngC234DFlwTS, RlmeEngC234DFlwTS) #okay scatter, definitely more condensed in the middle
+abline(h=0, col=c("red"))
+hist(RlmeEngC234DFlwTS) #good
+qqnorm(RlmeEngC234DFlwTS, main="Q-Q plot for residuals") 
+qqline(RlmeEngC234DFlwTS) #tails at either end, but okay
+
+#outliers
+RlmeEngC234DFlwTS <- resid(lmeEngC234DFlwTS)
+SDRlmeEngC234DFlwTS <- 3*sd(RlmeEngC234DFlwTS)
+ORlmeEngC234DFlwTS <- ifelse(abs(RlmeEngC234DFlwTS)>SDRlmeEngC234DFlwTS, 1, 0)
+plot(RlmeEngC234DFlwTS, col=ORlmeEngC234DFlwTS+1, pch=16, ylim=c(-1,1))
+EngC234DFlw <- EngC234DFlwx[!ORlmeEngC234DFlwTS,]
+nrow(EngC234DFlw) #185 from 188
+
+EngC234DFlw$sqrtDFlw <- sqrt(EngC234DFlw$DFlw+0.5)
+
+SumEngC234DFlw2<- summarySE(EngC234DFlw, measurevar="sqrtDFlw", groupvars=c("Rep", "Trtmt")) 
+GGEngC234DFlw2 <- ggplot(data=SumEngC234DFlw2, aes(x=Trtmt, y=sqrtDFlw, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtDFlw-se, ymax=sqrtDFlw+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(Log[10]~Height~at~Flowering~(cm)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Height at Flowering\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngC234DFlwTSR2 <- lmer(sqrtDFlw~Trtmt+(1|SSID)+(1|Rep), data=EngC234DFlw)
+summary(lmeEngC234DFlwTSR2)
+lmeEngC234DFlwTS2 <- lmer(sqrtDFlw~Trtmt+(1|SSID), data=EngC234DFlw)
+anova(lmeEngC234DFlwTS2, lmeEngC234DFlwTSR2) #the removal of Rep was non significant (p=1 Chisq=0)
+lmeEngC234DFlwTR2 <- lmer(sqrtDFlw~Trtmt+(1|Rep), data=EngC234DFlw)
+anova(lmeEngC234DFlwTR2, lmeEngC234DFlwTSR2) #the removal of SSID was significant (p=<0.0001 Chisq=34.403)
+lmEngC234DFlwT2 <- lm(sqrtDFlw~Trtmt, data=EngC234DFlw)
+x <- -2*logLik(lmEngC234DFlwT2, REML=T) +2*logLik(lmeEngC234DFlwTS2, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=34.96, p=<0.0001, random effect of SSID was sig
+AIC(lmEngC234DFlwT2) #=214.054
+AIC(lmeEngC234DFlwTS2) #=195.97
+#Therefore SSID needs to be included in the model as random effect
+lmeEngC234DFlwS2 <- update(lmeEngC234DFlwTS2,~.-Trtmt)
+anova(lmeEngC234DFlwS2, lmeEngC234DFlwTS2) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.2698 chisq=3.92)
+
+#check assumptions of best model
+RlmeEngC234DFlwTS2 <- resid(lmeEngC234DFlwTS2) 
+FlmeEngC234DFlwTS2 <- fitted(lmeEngC234DFlwTS2)
+plot(FlmeEngC234DFlwTS2, RlmeEngC234DFlwTS2) #okay scatter, more condensed in the middle
+abline(h=0, col=c("red"))
+hist(RlmeEngC234DFlwTS2) #good
+qqnorm(RlmeEngC234DFlwTS2, main="Q-Q plot for residuals") 
+qqline(RlmeEngC234DFlwTS2) #tails at either end, but okay.. better than before removing outliers
+
+
+#*******************************
+#FlwDuration
+EngC234FlwDx <- EngC234[!rowSums(is.na(EngC234["FlwDuration"])),]
+
+SumEngC234FlwD<- summarySE(EngC234FlwDx, measurevar="rankFlwDuration", groupvars=c("Rep", "Trtmt")) 
+GGEngC234FlwD <- ggplot(data=SumEngC234FlwD, aes(x=Trtmt, y=rankFlwDuration, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=rankFlwDuration-se, ymax=rankFlwDuration+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(Log[10]~Height~at~Flowering~(cm)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Height at Flowering\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngC234FlwDTSR <- lmer(rankFlwDuration~Trtmt+(1|SSID)+(1|Rep), data=EngC234FlwDx)
+summary(lmeEngC234FlwDTSR)
+lmeEngC234FlwDTS <- lmer(rankFlwDuration~Trtmt+(1|SSID), data=EngC234FlwDx)
+anova(lmeEngC234FlwDTS, lmeEngC234FlwDTSR) #the removal of Rep was non significant (p=1 Chisq=0)
+lmeEngC234FlwDTR <- lmer(rankFlwDuration~Trtmt+(1|Rep), data=EngC234FlwDx)
+anova(lmeEngC234FlwDTR, lmeEngC234FlwDTSR) #the removal of SSID was marginally non significant (p=0.062 Chisq=3.48)
+lmEngC234FlwDT <- lm(rankFlwDuration~Trtmt, data=EngC234FlwDx)
+x <- -2*logLik(lmEngC234FlwDT, REML=T) +2*logLik(lmeEngC234FlwDTS, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=3.44, p=0.33, random effect of SSID was non sig
+AIC(lmEngC234FlwDT) #=1969.76
+AIC(lmeEngC234FlwDTS) #=1944.991
+#Therefore SSID needs to be included in the model as random effect
+lmeEngC234FlwDS <- update(lmeEngC234FlwDTS,~.-Trtmt)
+anova(lmeEngC234FlwDS, lmeEngC234FlwDTS) #the effect of trtmt is significant after considering
+#the variation explained by SSID and Rep (p=0.027 chisq=9.15)
+
+#check assumptions of best model
+RlmeEngC234FlwDTS <- resid(lmeEngC234FlwDTS) 
+FlmeEngC234FlwDTS <- fitted(lmeEngC234FlwDTS)
+plot(FlmeEngC234FlwDTS, RlmeEngC234FlwDTS) #scatter shows trend
+abline(h=0, col=c("red"))
+hist(RlmeEngC234FlwDTS) #poor
+qqnorm(RlmeEngC234FlwDTS, main="Q-Q plot for residuals") 
+qqline(RlmeEngC234FlwDTS) #large tails
+
+#outliers
+RlmeEngC234FlwDTS <- resid(lmeEngC234FlwDTS)
+SDRlmeEngC234FlwDTS <- 3*sd(RlmeEngC234FlwDTS)
+ORlmeEngC234FlwDTS <- ifelse(abs(RlmeEngC234FlwDTS)>SDRlmeEngC234FlwDTS, 1, 0)
+plot(RlmeEngC234FlwDTS, col=ORlmeEngC234FlwDTS+1, pch=16, ylim=c(-100,100))
+EngC234FlwD <- EngC234FlwDx[!ORlmeEngC234FlwDTS,]
+nrow(EngC234FlwD) #184 from 188
+
+SumEngC234FlwD2<- summarySE(EngC234FlwD, measurevar="rankFlwDuration", groupvars=c("Rep", "Trtmt")) 
+GGEngC234FlwD2 <- ggplot(data=SumEngC234FlwD2, aes(x=Trtmt, y=rankFlwDuration, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=rankFlwDuration-se, ymax=rankFlwDuration+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(Log[10]~Height~at~Flowering~(cm)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Height at Flowering\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngC234FlwDTSR2 <- lmer(rankFlwDuration~Trtmt+(1|SSID)+(1|Rep), data=EngC234FlwD)
+summary(lmeEngC234FlwDTSR2)
+lmeEngC234FlwDTS2 <- lmer(rankFlwDuration~Trtmt+(1|SSID), data=EngC234FlwD)
+anova(lmeEngC234FlwDTS2, lmeEngC234FlwDTSR2) #the removal of Rep was non significant (p=1 Chisq=0)
+lmeEngC234FlwDTR2 <- lmer(rankFlwDuration~Trtmt+(1|Rep), data=EngC234FlwD)
+anova(lmeEngC234FlwDTR2, lmeEngC234FlwDTSR2) #the removal of SSID was marginally non significant (p=0.062 Chisq=3.48)
+lmEngC234FlwDT2 <- lm(rankFlwDuration~Trtmt, data=EngC234FlwD)
+x <- -2*logLik(lmEngC234FlwDT2, REML=T) +2*logLik(lmeEngC234FlwDTS2, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=3.44, p=0.33, random effect of SSID was non sig
+AIC(lmEngC234FlwDT2) #=1969.76
+AIC(lmeEngC234FlwDTS2) #=1944.991
+#Therefore SSID needs to be included in the model as random effect
+lmeEngC234FlwDS2 <- update(lmeEngC234FlwDTS2,~.-Trtmt)
+anova(lmeEngC234FlwDS2, lmeEngC234FlwDTS2) #the effect of trtmt is significant after considering
+#the variation explained by SSID and Rep (p=0.027 chisq=9.15)
+
+#check assumptions of best model
+RlmeEngC234FlwDTS2 <- resid(lmeEngC234FlwDTS2) 
+FlmeEngC234FlwDTS2 <- fitted(lmeEngC234FlwDTS2)
+plot(FlmeEngC234FlwDTS2, RlmeEngC234FlwDTS2) #scatter shows trend
+abline(h=0, col=c("red"))
+hist(RlmeEngC234FlwDTS2) #poor
+qqnorm(RlmeEngC234FlwDTS2, main="Q-Q plot for residuals") 
+qqline(RlmeEngC234FlwDTS2) #large tails
+
