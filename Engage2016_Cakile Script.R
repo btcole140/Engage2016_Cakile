@@ -2,6 +2,11 @@ setwd("/Users/mac/Google Drive/NSERC Engage/Methods and Data/Cakile/data analysi
 
 EngC <- read.csv("Engage2016_Cakile.csv")
 
+library("car", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("lme4", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+
+
 str(EngC)
 
 EngC$SID <- as.factor(EngC$SID)
@@ -10,6 +15,8 @@ EngC$Trtmt <- as.factor(EngC$Trtmt)
 EngC$Pres_Abs <- as.factor(EngC$Pres_Abs)
 EngC$DateFlw <- as.Date(EngC$DateFlw, "%d-%b-%y")
 EngC$DateFrt <- as.Date(EngC$DateFrt, "%d-%b-%y")
+write.table(EngC, file = "Engage2016_Cakile_set.csv", sep = ",", col.names = TRUE, row.names = FALSE)
+
 
 #Subset data
 EngC1 <- subset(EngC, Rep == "1")
@@ -140,6 +147,8 @@ EngC$sqrtWCFrt <- sqrt(EngC$WCFrt+0.5)
 hist(EngC$sqrtWCFrt) #not much better than raw
 EngC$rankWCFrt <- rank(EngC$WCFrt)
 
+write.table(EngC, file = "Engage2016_Cakile_set.csv", sep = ",", col.names = TRUE, row.names = FALSE)
+
 #********************************
 #Analysis of variation between trtmts while considering rep and tray
 #*******************************
@@ -178,7 +187,7 @@ anova(lmeEngCHSR, lmeEngCHTSR) #the effect of trtmt is significant after conside
 #check assumptions of best model
 RlmeEngCHTSR <- resid(lmeEngCHTSR) 
 FlmeEngCHTSR <- fitted(lmeEngCHTSR)
-plot(FlmeEngCHTSR, RlmeEngCHTSR) #okay skatter
+plot(FlmeEngCHTSR, RlmeEngCHTSR) #okay scatter
 abline(h=0, col=c("red"))
 hist(RlmeEngCHTSR) #not bad, few columns and a slight skew right
 qqnorm(RlmeEngCHTSR, main="Q-Q plot for residuals") 
@@ -226,7 +235,7 @@ anova(lmeEngCHSR2, lmeEngCHTSR2) #the effect of trtmt is significant after consi
 #check assumptions of best model
 RlmeEngCHTSR2 <- resid(lmeEngCHTSR2) 
 FlmeEngCHTSR2 <- fitted(lmeEngCHTSR2)
-plot(FlmeEngCHTSR2, RlmeEngCHTSR2) #okay skatter
+plot(FlmeEngCHTSR2, RlmeEngCHTSR2) #okay scatter
 abline(h=0, col=c("red"))
 hist(RlmeEngCHTSR2) #not bad, not many columns and a slight skew right
 qqnorm(RlmeEngCHTSR2, main="Q-Q plot for residuals") 
@@ -268,7 +277,7 @@ anova(lmeEngCBHR, lmeEngCBHTR) #the effect of trtmt is not significant after con
 #check assumptions of best model
 RlmeEngCBHTR <- resid(lmeEngCBHTR) 
 FlmeEngCBHTR <- fitted(lmeEngCBHTR)
-plot(FlmeEngCBHTR, RlmeEngCBHTR) #okay skatter, but shows trend from left to right
+plot(FlmeEngCBHTR, RlmeEngCBHTR) #okay scatter, but shows trend from left to right
 abline(h=0, col=c("red"))
 hist(RlmeEngCBHTR) #okay.. few columns and the middle columns are all the same height
 qqnorm(RlmeEngCBHTR, main="Q-Q plot for residuals") 
@@ -297,40 +306,500 @@ GGEngCFr <- ggplot(data=SumEngCFr, aes(x=Trtmt, y=sqrtLTFrt, group=Rep, shape=Re
   theme(axis.title.y = element_text(face="bold", size=20),
         axis.text.y  = element_text(size=16))
 
-lmeEngCBHTSR <- lmer(rankBranchesH~Trtmt+(1|SSID)+(1|Rep), data=EngC)
-summary(lmeEngCBHTSR)
-lmeEngCBHTS <- lmer(rankBranchesH~Trtmt+(1|SSID), data=EngC)
-anova(lmeEngCBHTS, lmeEngCBHTSR) #the removal of Rep was significant (p=0.001 Chisq=10.82)
-lmeEngCBHTR <- lmer(rankBranchesH~Trtmt+(1|Rep), data=EngC)
-anova(lmeEngCBHTR, lmeEngCBHTSR) #the removal of SSID was not significant (p=0.486 Chisq=0.486)
-lmEngCBHT <- lm(rankBranchesH~Trtmt, data=EngC)
-x <- -2*logLik(lmEngCBHT, REML=T) +2*logLik(lmeEngCBHTR, REML=T)
+lmeEngCFrTSR <- lmer(sqrtLTFrt~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCFrTSR)
+lmeEngCFrTS <- lmer(sqrtLTFrt~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCFrTS, lmeEngCFrTSR) #the removal of Rep was significant (p=<0.0001 Chisq=15.71)
+lmeEngCFrTR <- lmer(sqrtLTFrt~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCFrTR, lmeEngCFrTSR) #the removal of SSID was not significant (p=1 Chisq=0)
+lmEngCFrT <- lm(sqrtLTFrt~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCFrT, REML=T) +2*logLik(lmeEngCFrTR, REML=T)
 x
 pchisq(x, df=3, lower.tail=F)
-#logLik=16.35, p=0.00096, random effect of Rep was sig
-AIC(lmEngCBHT) #=2957.64
-AIC(lmeEngCBHTR) #=2918.23
+#logLik=20.91, p=0.00011, random effect of Rep was sig
+AIC(lmEngCFrT) #=721.98
+AIC(lmeEngCFrTR) #=710.86
 #Therefore Rep needs to be included in the model as random effect
-lmeEngCBHR <- update(lmeEngCBHTR,~.-Trtmt)
-anova(lmeEngCBHR, lmeEngCBHTR) #the effect of trtmt is not significant after considering
-#the variation explained by SSID and Rep (p=0.112 chisq=5.998)
+lmeEngCFrR <- update(lmeEngCFrTR,~.-Trtmt)
+anova(lmeEngCFrR, lmeEngCFrTR) #the effect of trtmt is marginally non significant after considering
+#the variation explained by SSID and Rep (p=0.0703 chisq=7.051)
 
 #check assumptions of best model
-RlmeEngCBHTR <- resid(lmeEngCBHTR) 
-FlmeEngCBHTR <- fitted(lmeEngCBHTR)
-plot(FlmeEngCBHTR, RlmeEngCBHTR) #okay skatter, but shows trend from left to right
+RlmeEngCFrTR <- resid(lmeEngCFrTR) 
+FlmeEngCFrTR <- fitted(lmeEngCFrTR)
+plot(FlmeEngCFrTR, RlmeEngCFrTR) #okay scatter, small gap just left of middle
 abline(h=0, col=c("red"))
-hist(RlmeEngCBHTR) #okay.. few columns and the middle columns are all the same height
-qqnorm(RlmeEngCBHTR, main="Q-Q plot for residuals") 
-qqline(RlmeEngCBHTR) #tails at either end
+hist(RlmeEngCFrTR) #okay.. few columns
+qqnorm(RlmeEngCFrTR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCFrTR) #tails at either end
 
 #outliers
-RlmeEngCBHTR <- resid(lmeEngCBHTR)
-SDRlmeEngCBHTR <- 3*sd(RlmeEngCBHTR)
-ORlmeEngCBHTR <- ifelse(abs(RlmeEngCBHTR)>SDRlmeEngCBHTR, 1, 0)
-plot(RlmeEngCBHTR, col=ORlmeEngCBHTR+1, pch=16, ylim=c(-200,200))
-EngCBH <- EngC[!ORlmeEngCBHTR,]
-nrow(EngCBH) #258 from 258... no outliers
+RlmeEngCFrTR <- resid(lmeEngCFrTR)
+SDRlmeEngCFrTR <- 3*sd(RlmeEngCFrTR)
+ORlmeEngCFrTR <- ifelse(abs(RlmeEngCFrTR)>SDRlmeEngCFrTR, 1, 0)
+plot(RlmeEngCFrTR, col=ORlmeEngCFrTR+1, pch=16, ylim=c(-10,10))
+EngCFr <- EngC[!ORlmeEngCFrTR,]
+nrow(EngCFr) #253 from 258
+
+SumEngCFr2<- summarySE(EngCFr, measurevar="sqrtLTFrt", groupvars=c("Rep", "Trtmt")) 
+GGEngCFr2 <- ggplot(data=SumEngCFr2, aes(x=Trtmt, y=sqrtLTFrt, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtLTFrt-se, ymax=sqrtLTFrt+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(sqrt(Lifetime~Fruit)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Lifetime Fruit\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCFrTSR2 <- lmer(sqrtLTFrt~Trtmt+(1|SSID)+(1|Rep), data=EngCFr)
+summary(lmeEngCFrTSR2)
+lmeEngCFrTS2 <- lmer(sqrtLTFrt~Trtmt+(1|SSID), data=EngCFr)
+anova(lmeEngCFrTS2, lmeEngCFrTSR2) #the removal of Rep was significant (p=0.00012 Chisq=14.79)
+lmeEngCFrTR2 <- lmer(sqrtLTFrt~Trtmt+(1|Rep), data=EngCFr)
+anova(lmeEngCFrTR2, lmeEngCFrTSR2) #the removal of SSID was not significant (p=1 Chisq=0)
+lmEngCFrT2 <- lm(sqrtLTFrt~Trtmt, data=EngCFr)
+x <- -2*logLik(lmEngCFrT2, REML=T) +2*logLik(lmeEngCFrTR2, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=19.81, p=0.00019, random effect of Rep was sig
+AIC(lmEngCFrT2) #=705.705
+AIC(lmeEngCFrTR2) #=695.61
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCFrR2 <- update(lmeEngCFrTR2,~.-Trtmt)
+anova(lmeEngCFrR2, lmeEngCFrTR2) #the effect of trtmt is marginally non significant after considering
+#the variation explained by SSID and Rep (p=0.072 chisq=7.002)
+
+#check assumptions of best model
+RlmeEngCFrTR2 <- resid(lmeEngCFrTR2) 
+FlmeEngCFrTR2 <- fitted(lmeEngCFrTR2)
+plot(FlmeEngCFrTR2, RlmeEngCFrTR2) #okay scatter, small gap just left of middle
+abline(h=0, col=c("red"))
+hist(RlmeEngCFrTR2) #okay.. few columns
+qqnorm(RlmeEngCFrTR2, main="Q-Q plot for residuals") 
+qqline(RlmeEngCFrTR2) #tails at either end... no change from when outliers included.
+
+
+#***************************
+#WetWtAll
+SumEngCWWA<- summarySE(EngC, measurevar="WetWtAll", groupvars=c("Rep", "Trtmt")) 
+GGEngCWWA <- ggplot(data=SumEngCWWA, aes(x=Trtmt, y=WetWtAll, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=WetWtAll-se, ymax=WetWtAll+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Plant Weight\nat Harvest (g)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Whole Wet Weight\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCWWATSR <- lmer(WetWtAll~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCWWATSR)
+lmeEngCWWATS <- lmer(WetWtAll~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCWWATS, lmeEngCWWATSR) #the removal of Rep was significant (p=<0.0001 Chisq=23.027)
+lmeEngCWWATR <- lmer(WetWtAll~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCWWATR, lmeEngCWWATSR) #the removal of SSID was not significant (p=0.135 Chisq=2.23)
+lmEngCWWAT <- lm(WetWtAll~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCWWAT, REML=T) +2*logLik(lmeEngCWWATR, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=37.039, p=<0.0001, random effect of Rep was sig
+AIC(lmEngCWWAT) #=1016.735
+AIC(lmeEngCWWATR) #=984.359
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCWWAR <- update(lmeEngCWWATR,~.-Trtmt)
+anova(lmeEngCWWAR, lmeEngCWWATR) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.1326 chisq=5.6037)
+
+#check assumptions of best model
+RlmeEngCWWATR <- resid(lmeEngCWWATR) 
+FlmeEngCWWATR <- fitted(lmeEngCWWATR)
+plot(FlmeEngCWWATR, RlmeEngCWWATR) #okay scatter, small gap just left of middle
+abline(h=0, col=c("red"))
+hist(RlmeEngCWWATR) #good
+qqnorm(RlmeEngCWWATR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCWWATR) #slight tail at either end, but good
+
+#outliers
+RlmeEngCWWATR <- resid(lmeEngCWWATR)
+SDRlmeEngCWWATR <- 3*sd(RlmeEngCWWATR)
+ORlmeEngCWWATR <- ifelse(abs(RlmeEngCWWATR)>SDRlmeEngCWWATR, 1, 0)
+plot(RlmeEngCWWATR, col=ORlmeEngCWWATR+1, pch=16, ylim=c(-10,10))
+EngCWWA <- EngC[!ORlmeEngCWWATR,]
+nrow(EngCWWA) #258 from 258... no outliers
+
+
+#***************************
+#DryWtAll
+SumEngCDWA<- summarySE(EngC, measurevar="DryWtAll", groupvars=c("Rep", "Trtmt")) 
+GGEngCDWA <- ggplot(data=SumEngCDWA, aes(x=Trtmt, y=DryWtAll, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=DryWtAll-se, ymax=DryWtAll+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Plant Dry Weight (g)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Whole Dry Weight\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCDWATSR <- lmer(DryWtAll~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCDWATSR)
+lmeEngCDWATS <- lmer(DryWtAll~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCDWATS, lmeEngCDWATSR) #the removal of Rep was significant (p=<0.0001 Chisq=25.88)
+lmeEngCDWATR <- lmer(DryWtAll~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCDWATR, lmeEngCDWATSR) #the removal of SSID was not significant (p=0.795 Chisq=0.067)
+lmEngCDWAT <- lm(DryWtAll~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCDWAT, REML=T) +2*logLik(lmeEngCDWATR, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=38.72, p=<0.0001, random effect of Rep was sig
+AIC(lmEngCDWAT) #=179.37
+AIC(lmeEngCDWATR) #=159.88
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCDWAR <- update(lmeEngCDWATR,~.-Trtmt)
+anova(lmeEngCDWAR, lmeEngCDWATR) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.127 chisq=5.67)
+
+#check assumptions of best model
+RlmeEngCDWATR <- resid(lmeEngCDWATR) 
+FlmeEngCDWATR <- fitted(lmeEngCDWATR)
+plot(FlmeEngCDWATR, RlmeEngCDWATR) #okay scatter
+abline(h=0, col=c("red"))
+hist(RlmeEngCDWATR) #good
+qqnorm(RlmeEngCDWATR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCDWATR) #slight tail at bottom end, but good
+
+#outliers
+RlmeEngCDWATR <- resid(lmeEngCDWATR)
+SDRlmeEngCDWATR <- 3*sd(RlmeEngCDWATR)
+ORlmeEngCDWATR <- ifelse(abs(RlmeEngCDWATR)>SDRlmeEngCDWATR, 1, 0)
+plot(RlmeEngCDWATR, col=ORlmeEngCDWATR+1, pch=16, ylim=c(-1,1))
+EngCDWA <- EngC[!ORlmeEngCDWATR,]
+nrow(EngCDWA) #258 from 258... no outliers
+
+
+#***************************
+#WetWtFrt
+SumEngCWWF<- summarySE(EngC, measurevar="sqrtWetWtFrt", groupvars=c("Rep", "Trtmt")) 
+GGEngCWWF <- ggplot(data=SumEngCWWF, aes(x=Trtmt, y=sqrtWetWtFrt, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtWetWtFrt-se, ymax=sqrtWetWtFrt+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(sqrt(Fruit~Harvest~Weight~(g))))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Fruit Wet Weight\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCWWFTSR <- lmer(sqrtWetWtFrt~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCWWFTSR)
+lmeEngCWWFTS <- lmer(sqrtWetWtFrt~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCWWFTS, lmeEngCWWFTSR) #the removal of Rep was significant (p=<0.0001 Chisq=23.66)
+lmeEngCWWFTR <- lmer(sqrtWetWtFrt~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCWWFTR, lmeEngCWWFTSR) #the removal of SSID was not significant (p=0.1247 Chisq=2.36)
+lmEngCWWFT <- lm(sqrtWetWtFrt~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCWWFT, REML=T) +2*logLik(lmeEngCWWFTR, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=40.44, p=<0.0001, random effect of Rep was sig
+AIC(lmEngCWWFT) #=199.99
+AIC(lmeEngCWWFTR) #=178.41
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCWWFR <- update(lmeEngCWWFTR,~.-Trtmt)
+anova(lmeEngCWWFR, lmeEngCWWFTR) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.42 chisq=2.81)
+
+#check assumptions of best model
+RlmeEngCWWFTR <- resid(lmeEngCWWFTR) 
+FlmeEngCWWFTR <- fitted(lmeEngCWWFTR)
+plot(FlmeEngCWWFTR, RlmeEngCWWFTR) #okay scatter, small gap just left of middle
+abline(h=0, col=c("red"))
+hist(RlmeEngCWWFTR) #good
+qqnorm(RlmeEngCWWFTR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCWWFTR) #tail at bottom end
+
+#outliers
+RlmeEngCWWFTR <- resid(lmeEngCWWFTR)
+SDRlmeEngCWWFTR <- 3*sd(RlmeEngCWWFTR)
+ORlmeEngCWWFTR <- ifelse(abs(RlmeEngCWWFTR)>SDRlmeEngCWWFTR, 1, 0)
+plot(RlmeEngCWWFTR, col=ORlmeEngCWWFTR+1, pch=16, ylim=c(-1,1))
+EngCWWF <- EngC[!ORlmeEngCWWFTR,]
+nrow(EngCWWF) #258 from 258... no outliers
+
+#***************************
+#DryWtFrt
+SumEngCDWF<- summarySE(EngC, measurevar="sqrtDryWtFrt", groupvars=c("Rep", "Trtmt")) 
+GGEngCDWF <- ggplot(data=SumEngCDWF, aes(x=Trtmt, y=sqrtDryWtFrt, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtDryWtFrt-se, ymax=sqrtDryWtFrt+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(sqrt(Fruit~Dry~Weight~(g))))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Fruit Dry Weight\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCDWFTSR <- lmer(sqrtDryWtFrt~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCDWFTSR)
+lmeEngCDWFTS <- lmer(sqrtDryWtFrt~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCDWFTS, lmeEngCDWFTSR) #the removal of Rep was significant (p=<0.0001 Chisq=30.79)
+lmeEngCDWFTR <- lmer(sqrtDryWtFrt~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCDWFTR, lmeEngCDWFTSR) #the removal of SSID was not significant (p=0.701 Chisq=0.147)
+lmEngCDWFT <- lm(sqrtDryWtFrt~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCDWFT, REML=T) +2*logLik(lmeEngCDWFTR, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=50.65, p=<0.0001, random effect of Rep was sig
+AIC(lmEngCDWFT) #=-425.786
+AIC(lmeEngCDWFTR) #=-446.687
+#Therefore Rep needs to be included in the model as random effect
+lmeEngCDWFR <- update(lmeEngCDWFTR,~.-Trtmt)
+anova(lmeEngCDWFR, lmeEngCDWFTR) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.37 chisq=3.14)
+
+#check assumptions of best model
+RlmeEngCDWFTR <- resid(lmeEngCDWFTR) 
+FlmeEngCDWFTR <- fitted(lmeEngCDWFTR)
+plot(FlmeEngCDWFTR, RlmeEngCDWFTR) #okay scatter
+abline(h=0, col=c("red"))
+hist(RlmeEngCDWFTR) #good
+qqnorm(RlmeEngCDWFTR, main="Q-Q plot for residuals") 
+qqline(RlmeEngCDWFTR) #slight tail at either end, but good
+
+#outliers
+RlmeEngCDWFTR <- resid(lmeEngCDWFTR)
+SDRlmeEngCDWFTR <- 3*sd(RlmeEngCDWFTR)
+ORlmeEngCDWFTR <- ifelse(abs(RlmeEngCDWFTR)>SDRlmeEngCDWFTR, 1, 0)
+plot(RlmeEngCDWFTR, col=ORlmeEngCDWFTR+1, pch=16, ylim=c(-1,1))
+EngCDWF <- EngC[!ORlmeEngCDWFTR,]
+nrow(EngCDWF) #257 from 258... one outlier... likely not worth running models again without this outlier
+
+#***************************
+#WCAll
+EngC$WCAll2 <- ((EngC$WCAll/EngC$WetWtAll)*100)
+hist(EngC$WCAll2) #good as raw
+write.table(EngC, file = "Engage2016_Cakile_set.csv", sep = ",", col.names = TRUE, row.names = FALSE)
+
+
+SumEngCWCA<- summarySE(EngC, measurevar="sqrtWCAll", groupvars=c("Rep", "Trtmt")) 
+GGEngCWCA <- ggplot(data=SumEngCWCA, aes(x=Trtmt, y=sqrtWCAll, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=sqrtWCAll-se, ymax=sqrtWCAll+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(sqrt(Water~Content~(g))))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Water Content\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+SumEngCWCA2<- summarySE(EngC, measurevar="WCAll2", groupvars=c("Rep", "Trtmt")) 
+GGEngCWCA2 <- ggplot(data=SumEngCWCA2, aes(x=Trtmt, y=WCAll2, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=WCAll2-se, ymax=WCAll2+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Water Content (%)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile % Water Content\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCWCA2TSR <- lmer(WCAll2~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCWCA2TSR)
+lmeEngCWCA2TS <- lmer(WCAll2~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCWCA2TS, lmeEngCWCA2TSR) #the removal of Rep was marginally non significant (p=0.056 Chisq=3.65)
+lmeEngCWCA2TR <- lmer(WCAll2~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCWCA2TR, lmeEngCWCA2TSR) #the removal of SSID was significant (p=0.0021 Chisq=9.45)
+lmEngCWCA2T <- lm(WCAll2~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCWCA2T, REML=T) +2*logLik(lmeEngCWCA2TS, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=14.31, p=0.0025, random effect of SSID was sig
+AIC(lmEngCWCA2T) #=1105.407
+AIC(lmeEngCWCA2TS) #=1094.215
+#Therefore SSID needs to be included in the model as random effect
+lmeEngCWCA2S <- update(lmeEngCWCA2TS,~.-Trtmt)
+anova(lmeEngCWCA2S, lmeEngCWCA2TS) #the effect of trtmt is significant after considering
+#the variation explained by SSID and Rep (p=0.0078 chisq=11.89)
+
+#check assumptions of best model
+RlmeEngCWCA2TS <- resid(lmeEngCWCA2TS) 
+FlmeEngCWCA2TS <- fitted(lmeEngCWCA2TS)
+plot(FlmeEngCWCA2TS, RlmeEngCWCA2TS) #okay scatter, more centred along x axis
+abline(h=0, col=c("red"))
+hist(RlmeEngCWCA2TS) #good
+qqnorm(RlmeEngCWCA2TS, main="Q-Q plot for residuals") 
+qqline(RlmeEngCWCA2TS) #slight tail at either end, but good
+
+#outliers
+RlmeEngCWCA2TS <- resid(lmeEngCWCA2TS)
+SDRlmeEngCWCA2TS <- 3*sd(RlmeEngCWCA2TS)
+ORlmeEngCWCA2TS <- ifelse(abs(RlmeEngCWCA2TS)>SDRlmeEngCWCA2TS, 1, 0)
+plot(RlmeEngCWCA2TS, col=ORlmeEngCWCA2TS+1, pch=16, ylim=c(-10,10))
+EngCWCA2 <- EngC[!ORlmeEngCWCA2TS,]
+nrow(EngCWCA2) #252 from 258
+
+SumEngCWCA22<- summarySE(EngCWCA2, measurevar="WCAll2", groupvars=c("Rep", "Trtmt")) 
+GGEngCWCA22 <- ggplot(data=SumEngCWCA22, aes(x=Trtmt, y=WCAll2, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=WCAll2-se, ymax=WCAll2+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Water Content (%)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile % Water Content\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCWCA2TSR2 <- lmer(WCAll2~Trtmt+(1|SSID)+(1|Rep), data=EngCWCA2)
+summary(lmeEngCWCA2TSR2)
+lmeEngCWCA2TS2 <- lmer(WCAll2~Trtmt+(1|SSID), data=EngCWCA2)
+anova(lmeEngCWCA2TS2, lmeEngCWCA2TSR2) #the removal of Rep was marginally non significant (p=0.059 Chisq=3.57)
+lmeEngCWCA2TR2 <- lmer(WCAll2~Trtmt+(1|Rep), data=EngCWCA2)
+anova(lmeEngCWCA2TR2, lmeEngCWCA2TSR2) #the removal of SSID was significant (p=0.0053 Chisq=7.76)
+lmEngCWCA2T2 <- lm(WCAll2~Trtmt, data=EngCWCA2)
+x <- -2*logLik(lmEngCWCA2T2, REML=T) +2*logLik(lmeEngCWCA2TS2, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=11.21, p=0.0106, random effect of SSID was sig
+AIC(lmEngCWCA2T2) #=1077.98
+AIC(lmeEngCWCA2TS2) #=1069.866
+#Therefore SSID needs to be included in the model as random effect
+lmeEngCWCA2S2 <- update(lmeEngCWCA2TS2,~.-Trtmt)
+anova(lmeEngCWCA2S2, lmeEngCWCA2TS2) #the effect of trtmt is significant after considering
+#the variation explained by SSID and Rep (p=0.0108 chisq=11.18)
+
+#check assumptions of best model
+RlmeEngCWCA2TS2 <- resid(lmeEngCWCA2TS2) 
+FlmeEngCWCA2TS2 <- fitted(lmeEngCWCA2TS2)
+plot(FlmeEngCWCA2TS2, RlmeEngCWCA2TS2) #okay scatter, scatter better than with outliers
+abline(h=0, col=c("red"))
+hist(RlmeEngCWCA2TS2) #good
+qqnorm(RlmeEngCWCA2TS2, main="Q-Q plot for residuals") 
+qqline(RlmeEngCWCA2TS2) #slight tail at either end, but good
+
+
+#***************************
+#WCFrt
+EngC$WCFrt2 <- ((EngC$WCFrt/EngC$WetWtFrt)*100)
+hist(EngC$WCFrt2) #good as raw
+write.table(EngC, file = "Engage2016_Cakile_set.csv", sep = ",", col.names = TRUE, row.names = FALSE)
+
+
+SumEngCWCF<- summarySE(EngC, measurevar="WCFrt", groupvars=c("Rep", "Trtmt")) 
+GGEngCWCF <- ggplot(data=SumEngCWCF, aes(x=Trtmt, y=WCFrt, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=WCFrt-se, ymax=WCFrt+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Water Content in Fruit (g)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Fruit Water Content\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+SumEngCWCF2<- summarySE(EngC, measurevar="WCFrt2", groupvars=c("Rep", "Trtmt")) 
+GGEngCWCF2 <- ggplot(data=SumEngCWCF2, aes(x=Trtmt, y=WCFrt2, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=WCFrt2-se, ymax=WCFrt2+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Water Content in Fruit (%)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile % Water Content in Fruit\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCWCF2TSR <- lmer(WCFrt2~Trtmt+(1|SSID)+(1|Rep), data=EngC)
+summary(lmeEngCWCF2TSR)
+lmeEngCWCF2TS <- lmer(WCFrt2~Trtmt+(1|SSID), data=EngC)
+anova(lmeEngCWCF2TS, lmeEngCWCF2TSR) #the removal of Rep was non significant (p=0.3125 Chisq=1.02)
+lmeEngCWCF2TR <- lmer(WCFrt2~Trtmt+(1|Rep), data=EngC)
+anova(lmeEngCWCF2TR, lmeEngCWCF2TSR) #the removal of SSID was significant (p=<0.0001 Chisq=19.554)
+lmEngCWCF2T <- lm(WCFrt2~Trtmt, data=EngC)
+x <- -2*logLik(lmEngCWCF2T, REML=T) +2*logLik(lmeEngCWCF2TS, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=23.45, p=<0.0001, random effect of SSID was sig
+AIC(lmEngCWCF2T) #=1293.38
+AIC(lmeEngCWCF2TS) #=1268.58
+#Therefore SSID needs to be included in the model as random effect
+lmeEngCWCF2S <- update(lmeEngCWCF2TS,~.-Trtmt)
+anova(lmeEngCWCF2S, lmeEngCWCF2TS) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.21 chisq=4.51)
+
+#check assumptions of best model
+RlmeEngCWCF2TS <- resid(lmeEngCWCF2TS) 
+FlmeEngCWCF2TS <- fitted(lmeEngCWCF2TS)
+plot(FlmeEngCWCF2TS, RlmeEngCWCF2TS) #okay scatter, slight skew right
+abline(h=0, col=c("red"))
+hist(RlmeEngCWCF2TS) #good
+qqnorm(RlmeEngCWCF2TS, main="Q-Q plot for residuals") 
+qqline(RlmeEngCWCF2TS) #slight tail at either end, but good
+
+#outliers
+RlmeEngCWCF2TS <- resid(lmeEngCWCF2TS)
+SDRlmeEngCWCF2TS <- 3*sd(RlmeEngCWCF2TS)
+ORlmeEngCWCF2TS <- ifelse(abs(RlmeEngCWCF2TS)>SDRlmeEngCWCF2TS, 1, 0)
+plot(RlmeEngCWCF2TS, col=ORlmeEngCWCF2TS+1, pch=16, ylim=c(-10,10))
+EngCWCF2 <- EngC[!ORlmeEngCWCF2TS,]
+nrow(EngCWCF2) #255 from 258
+
+SumEngCWCF22<- summarySE(EngCWCF2, measurevar="WCFrt2", groupvars=c("Rep", "Trtmt")) 
+GGEngCWCF22 <- ggplot(data=SumEngCWCF22, aes(x=Trtmt, y=WCFrt2, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=WCFrt2-se, ymax=WCFrt2+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab("Water Content in Fruit (%)") +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile % Water Content in Fruit\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngCWCF2TSR2 <- lmer(WCFrt2~Trtmt+(1|SSID)+(1|Rep), data=EngCWCF2)
+summary(lmeEngCWCF2TSR2)
+lmeEngCWCF2TS2 <- lmer(WCFrt2~Trtmt+(1|SSID), data=EngCWCF2)
+anova(lmeEngCWCF2TS2, lmeEngCWCF2TSR2) #the removal of Rep was non significant (p=0.3006 Chisq=1.071)
+lmeEngCWCF2TR2 <- lmer(WCFrt2~Trtmt+(1|Rep), data=EngCWCF2)
+anova(lmeEngCWCF2TR2, lmeEngCWCF2TSR2) #the removal of SSID was significant (p=<0.0001 Chisq=18.15)
+lmEngCWCF2T2 <- lm(WCFrt2~Trtmt, data=EngCWCF2)
+x <- -2*logLik(lmEngCWCF2T2, REML=T) +2*logLik(lmeEngCWCF2TS2, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=21.801, p=<0.0001, random effect of SSID was sig
+AIC(lmEngCWCF2T2) #=1274.66
+AIC(lmeEngCWCF2TS2) #=1251.48
+#Therefore SSID needs to be included in the model as random effect
+lmeEngCWCF2S2 <- update(lmeEngCWCF2TS2,~.-Trtmt)
+anova(lmeEngCWCF2S2, lmeEngCWCF2TS2) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.2312 chisq=4.2961)
+
+#check assumptions of best model
+RlmeEngCWCF2TS2 <- resid(lmeEngCWCF2TS2) 
+FlmeEngCWCF2TS2 <- fitted(lmeEngCWCF2TS2)
+plot(FlmeEngCWCF2TS2, RlmeEngCWCF2TS2) #okay scatter, slight skew right
+abline(h=0, col=c("red"))
+hist(RlmeEngCWCF2TS2) #good
+qqnorm(RlmeEngCWCF2TS2, main="Q-Q plot for residuals") 
+qqline(RlmeEngCWCF2TS2) #slight tail at either end, but good
 
 #**************************Only Reps 2, 3, 4 ****************************
 #Distribution
@@ -361,3 +830,58 @@ EngC234$sqrtFlwDuration <- sqrt(EngC234$FlwDuration+0.5)
 hist(EngC234$sqrtFlwDuration) #more columns but not much shape
 EngC234$rankFlwDuration <- rank(EngC234$FlwDuration) #*
 
+write.table(EngC234, file = "Engage2016_CakileRep234_set.csv", sep = ",", col.names = TRUE, row.names = FALSE)
+
+#*************************************
+#Analysis of variation between trtmts while considering rep and tray
+#*******************************
+#SizeFlw
+EngC234x <- EngC234$SizeFlw[!(is.na(EngC234$SizeFlw))]
+                          
+SumEngC234HFlw<- summarySE(EngC234, measurevar="logSizeFlw", groupvars=c("Rep", "Trtmt")) 
+GGEngC234HFlw <- ggplot(data=SumEngC234HFlw, aes(x=Trtmt, y=logSizeFlw, group=Rep, shape=Rep)) +
+  geom_errorbar(aes(ymin=logSizeFlw-se, ymax=logSizeFlw+se), width=0.1) + #set error bars
+  geom_line() + geom_point(size=3)+#can change size of data points
+  scale_shape_manual(values=c(15, 16, 17, 8))+
+  xlab("Treatment (%)") + ylab(expression(bold(Log[10]~Height~at~Flowering~(cm)))) +
+  scale_colour_hue(name="Replicate", l=40) + ggtitle("Cakile Height at Flowering\nbetween Treatments") + #name=sets the legend titel
+  theme_bw() + theme(legend.justification=c(1,0), legend.position=c(1,0.5))+ #legend.position is set to top right
+  theme(axis.title.x = element_text(face="bold", size=20), # can also add colour with "colour="#x"" where x is colour number
+        axis.text.x  = element_text(vjust=0.5, size=16))+ #vjust repositions the x axis text, can change angle of text with "angle=90"
+  theme(axis.title.y = element_text(face="bold", size=20),
+        axis.text.y  = element_text(size=16))
+
+lmeEngC234HFlwTSR <- lmer(logSizeFlw~Trtmt+(1|SSID)+(1|Rep), data=EngC234)
+summary(lmeEngC234HFlwTSR)
+lmeEngC234HFlwTS <- lmer(logSizeFlw~Trtmt+(1|SSID), data=EngC234)
+anova(lmeEngC234HFlwTS, lmeEngC234HFlwTSR) #the removal of Rep was non significant (p=0.3125 Chisq=1.02)
+lmeEngC234HFlwTR <- lmer(logSizeFlw~Trtmt+(1|Rep), data=EngC234)
+anova(lmeEngC234HFlwTR, lmeEngC234HFlwTSR) #the removal of SSID was significant (p=<0.0001 Chisq=19.554)
+lmEngC234HFlwT <- lm(logSizeFlw~Trtmt, data=EngC234)
+x <- -2*logLik(lmEngC234HFlwT, REML=T) +2*logLik(lmeEngC234HFlwTS, REML=T)
+x
+pchisq(x, df=3, lower.tail=F)
+#logLik=23.45, p=<0.0001, random effect of SSID was sig
+AIC(lmEngC234HFlwT) #=1293.38
+AIC(lmeEngC234HFlwTS) #=1268.58
+#Therefore SSID needs to be included in the model as random effect
+lmeEngC234HFlwS <- update(lmeEngC234HFlwTS,~.-Trtmt)
+anova(lmeEngC234HFlwS, lmeEngC234HFlwTS) #the effect of trtmt is non significant after considering
+#the variation explained by SSID and Rep (p=0.21 chisq=4.51)
+
+#check assumptions of best model
+RlmeEngC234HFlwTS <- resid(lmeEngC234HFlwTS) 
+FlmeEngC234HFlwTS <- fitted(lmeEngC234HFlwTS)
+plot(FlmeEngC234HFlwTS, RlmeEngC234HFlwTS) #okay scatter, slight skew right
+abline(h=0, col=c("red"))
+hist(RlmeEngC234HFlwTS) #good
+qqnorm(RlmeEngC234HFlwTS, main="Q-Q plot for residuals") 
+qqline(RlmeEngC234HFlwTS) #slight tail at either end, but good
+
+#outliers
+RlmeEngC234HFlwTS <- resid(lmeEngC234HFlwTS)
+SDRlmeEngC234HFlwTS <- 3*sd(RlmeEngCW234HFlwTS)
+ORlmeEngC234HFlwTS <- ifelse(abs(RlmeEngC234HFlwTS)>SDRlmeEngC234HFlwTS, 1, 0)
+plot(RlmeEngC234HFlwTS, col=ORlmeEngC234HFlwTS+1, pch=16, ylim=c(-10,10))
+EngC234HFlw <- EngC[!ORlmeEngC234HFlwTS,]
+nrow(EngC234HFlw) #255 from 258
